@@ -1,3 +1,7 @@
+OS	:= $(shell uname)
+
+ifeq ($(OS), Linux)
+
 MKDIR   := mkdir
 RMDIR   := rm -r
 CC      := g++
@@ -7,11 +11,11 @@ INCLUDE := ./include
 SRC     := ./src
 SRCS    := $(wildcard $(SRC)/*.cpp)
 OBJS    := $(patsubst $(SRC)/%.cpp,$(OBJ)/%.o,$(SRCS))
-CFLAGS  := -I$(INCLUDE)
+CFLAGS  := -I$(INCLUDE) -g
 LDLIBS  := #-lm
 EXE	:= $(BIN)/kavach
 
-.PHONY: all run clean
+.PHONY: all clean #run
 
 all: $(EXE)
 
@@ -24,8 +28,10 @@ $(OBJ)/%.o: $(SRC)/%.cpp | $(OBJ)
 $(BIN) $(OBJ):
 	$(MKDIR) $@
 
-run: $(EXE)
-	$<
+#run: $(EXE)
+#	$<
 
 clean:
 	$(RMDIR) $(OBJ) $(BIN)
+
+endif
