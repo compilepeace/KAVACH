@@ -19,6 +19,7 @@ static bool     load_fpn                (std::string &target_path, std::vector<F
 static char*    create_string_copy      (std::string &original_string);
 static ssize_t  add_to_nametab          (std::string &target_path, std::vector<char> &nametab, bool is_dir);
 static uint64_t load_archive_payload    (std::string &target_path, const uint64_t &size, std::vector< std::vector<uint8_t> > &payload);
+static bool     attach_ko               (int ofd, Kavach &ko);
 
 /* global data */
 static uint64_t total_archive_size  = 0;
@@ -52,24 +53,29 @@ bool pack (int kfd, std::string &target_path, std::string &key, std::string &of_
     }
 
     /* print nametab */
-    for (auto hdr: ko.fht) {
-        hdr.dump();
-        fprintf (stderr, "index: %ld: str: %s\n", hdr.fh_namendx, &ko.nametab[hdr.fh_namendx]);
-    }
+    // for (auto hdr: ko.fht) {
+    //     hdr.dump();
+    //     fprintf (stderr, "index: %ld: str: %s\n", hdr.fh_namendx, &ko.nametab[hdr.fh_namendx]);
+    // }
 
+    /* write Kavach object to End Of Kavach binary (odf). Populate Kavach Header too.  */
+    if (attach_ko (ofd, ko) == false) {
+        log (__FILE__, __FUNCTION__, __LINE__, "while writing kavach object");
+        return false;
+    }
 
     /* tamper SHT - add .kavach & .nametab section to accomodate kbf        *
      * (kavach binary format) so that programs like `strip` doesn't remove  *
      * archived content.                                                    */
 
 
-    /* write Kavach object to End Of Kavach binary (odf)                    */
+    
 
 
     /* write file content to archive into kavach                            */
 
 
-    /* fixup the remaining ko.fht and ko.header entries */
+    /* fixup the remaining ko.header entries */
 
 
     /* tamper PHT - convert PT_NOTE to PT_LOAD section to accomodate kbf    *
@@ -91,8 +97,8 @@ static bool load_kavach_object (std::string &target_path, Kavach &ko) {
         return false;
     }
 
-    /* load header */
-    
+    /* load kavach binary header (kbhdr) -                                      *    
+     * performed after writing all components of Kavach object to kavach binary */
 
     return true;
 }
@@ -113,7 +119,7 @@ static bool load_fpn (std::string &target_path, std::vector<Fhdr> &fht, std::vec
         }
         
             /* Loading file attributes into Fhdr */ 
-            cur_fhdr.fh_offset = 0;                     // set for S_ISDIR() 
+            cur_fhdr.fh_offset = 0;                     // set for S_ISDIR(). for S_ISREG(), it is set to cur_payload_offset 
             if (ENCRYPTION_TYPE == E_TYPE_NONE) {
                 cur_fhdr.fh_etype = Fhdr::FET_UND;
             }
@@ -336,4 +342,93 @@ static uint64_t load_archive_payload (std::string &path, const uint64_t &size, s
     
     close (afd);
     return archive_content.size();
+}
+
+
+
+/* writes kavach object to SFX binary represented by <ofd> in addition to loading ko.header. *
+ * Returns false on failure */
+static bool attach_ko (int ofd, Kavach &ko) {
+    
+    uint64_t kavach_start;
+    uint64_t bytes_written;
+    uint64_t write_size;
+
+
+    /* get offset of to start of kavach binary format (Kbhdr) */
+    kavach_start =  lseek (ofd, 0, SEEK_END);
+    if (kavach_start == -1) {
+        log (__FILE__, __FUNCTION__, __LINE__, "while lseek'ing to the end of SFX binary");
+        return false;
+    }
+
+    /* seek to the end of file + sizeof(Kbhdr) */
+    ko.header.k_fhtoff = lseek (ofd, sizeof(Kbhdr), SEEK_END);
+    if ( ko.header.k_fhtoff == -1 ) {
+        log (__FILE__, __FUNCTION__, __LINE__, "while lseek'ing to the end of SFX + sizeof(Kbhdr)");
+        return false;
+    }
+
+    /* write FHT */
+    ko.header.k_fhentsize   = sizeof (Fhdr);
+    ko.header.k_fhnum       = ko.fht.size();
+    write_size = sizeof(Fhdr);
+    for (auto fhdr: ko.fht) {
+        if (write (ofd, &fhdr, write_size) != write_size) {
+            es  = "while writing file header of: ";
+            es += &ko.nametab[fhdr.fh_namendx];
+            es += "to SFX binary";
+            log (__FILE__, __FUNCTION__, __LINE__, es);
+            return false;
+        }
+    }
+
+    /* write archive payload */
+    ko.header.k_payloadoff = lseek (ofd, 0, SEEK_CUR);
+    if (ko.header.k_payloadoff == -1) {
+        log (__FILE__, __FUNCTION__, __LINE__, "while loading ko.header.k_payloadoff (lseek failed)");
+        return false;
+    }
+
+    uint64_t current_offset = 0;
+    for (auto file: ko.payload) {
+
+        write_size = file.size();
+        if (write (ofd, &file[0], write_size) != write_size) {
+            es = "while writing payload offset: " + std::to_string (current_offset);
+            log (__FILE__, __FUNCTION__, __LINE__, es);
+            return false;
+        }
+        current_offset += write_size;
+    }
+
+    ko.header.k_payloadsz = current_offset;
+    if (current_offset != cur_payload_offset) {
+        log (__FILE__, __FUNCTION__, __LINE__, "Payload not completely written to SFX binary");
+        return false;
+    }
+    // else 
+    //     fprintf (stderr, "Payload successfully written to SFX binary\n");
+
+
+    /* write names table to file */
+    ko.header.k_nametaboff = lseek (ofd, 0, SEEK_CUR);
+    if (ko.header.k_nametaboff == -1) {
+        log (__FILE__, __FUNCTION__, __LINE__, "while loading ko.header.nametaboff (lseek failed)");
+        return false;
+    }
+    write_size = ko.nametab.size();
+    if (write (ofd, &ko.nametab[0], write_size) != write_size) {
+        log (__FILE__, __FUNCTION__, __LINE__, "while writing ko.nametab to SFX binary");
+        return false;
+    }
+
+    /* pwrite kavach binary header @ end of SFX's SHT == kavach_start */
+    write_size = sizeof(Kbhdr);
+    if (pwrite (ofd, &ko.header, write_size, kavach_start) != write_size) {
+         log (__FILE__, __FUNCTION__, __LINE__, "while writing kavach header to SFX binary");
+         return false;
+    }
+
+    return true;
 }

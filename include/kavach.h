@@ -111,7 +111,11 @@ public:
 
 /************************************************************************
  * Kavach Binary Header:                                                *
- *      Acts as a roadmap to parse the FHT.                             *
+ *      Acts as a roadmap to parse the FHT. Stores file offset (i.e.    *
+ *      offset from the beginning of binary file) unlike other parts    *
+ *      like FHT, payload and nametab which which stores section        *
+ *      offsets (i.e. offsets from beginning of some particular         *
+ *      section).                                                       *
  *                                                                      *
  * NOTE: Offset to FHT and the number of entries inside FHT are         *
  *       sufficient to parse the entire archived data.                  *
@@ -154,6 +158,54 @@ public:
  *                                                                      *
  * NOTE: It simply starts with a header (roadmap to FHT) followed by    * 
  *       the FHT itself.                                                *
+ *                                                                      *
+ *                       ___________________   _                        *
+ *                      |                   |   \ --->    KUNDAL        *
+ *                      |   [ ELF Header ]  |   |      [ packed SFX ]   *
+ *                      |___________________|   |                       *
+ *                      |                   |   |                       * 
+ *                      |      [ PHT ]      |   |                       * 
+ *                      |___________________|   | ===> ELF Binary       *
+ *                      |                   |   |                       *
+ *                      |   [ Sections ]    |   |                       *
+ *                      |___________________|   |                       *
+ *                      |                   |   |                       *
+ *                      |      [ SHT ]      |   |                       *
+ *                      |                   |  _/                       *
+ *                      ^^^^^^^^^^^^^^^^^^^^^                           *
+ *                               ||                                     *
+ *                               ||                                     *
+ *                            Attached                                  *
+ *                               ||                                     *
+ *                               ||                                     *
+ *                                                                      *
+ *                      |^^^^^^^^^^^^^^^^^^^|  _                        *
+ *                      |     [ Header ]    |   \                       *
+ *                      |      (Kbhdr)      |   |                       *
+ *                      |___________________|   |                       *
+ *                      |                   |   |                       *
+ *                      |      [ FHT ]      |   |                       *
+ *                      |                   |   |                       *
+ *                      |      -- Fhdr1     |   |                       *
+ *                      |      -- Fhdr2     |   |                       *
+ *                      |      -- Fhdr3     |   |                       *
+ *                      |         ...       |   |                       *
+ *                      |         ...       |   |                       *
+ *                      |      -- FhdrN     |   | ===> Kavach Skeleton  *
+ *                      |___________________|   |                       *
+ *                      |                   |   |                       *
+ *                      |    [ Payload ]    |   |                       *
+ *                      |                   |   |                       *
+ *                      |      -- File1     |   |                       *
+ *                      |      -- File2     |   |                       *
+ *                      |      -- File3     |   |                       *
+ *                      |          ...      |   |                       *
+ *                      |          ...      |   |                       *
+ *                      |      -- FileN     |   |                       *
+ *                      |___________________|   |                       *
+ *                      |                   |   |                       *
+ *                      |    [ nametab ]    |   |                       *
+ *                      |___________________|  _/                       *
  *                                                                      *
  ************************************************************************/
 class Kavach {
