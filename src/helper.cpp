@@ -88,7 +88,7 @@ void dump_memory_range (void *addr, size_t len){
 
 
 /* displays [user_string + error_string] for mmap() call to STDERR */ 
-void mmap_error (std::string &error_string, int &error){
+void mmap_error (std::string error_string, int &error){
     switch (error)
     {
         case EACCES:

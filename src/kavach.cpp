@@ -9,6 +9,7 @@
 
 #include "kavach.h"
 
+uint8_t 	shdr_entry	__attribute__ ((section (SHDR_NAME)));
 int 		DESTROY_RELICS 		= 0;
 int 		UNPACK_FLAG 		= 0;
 int			PACK_FLAG			= 0;
@@ -16,6 +17,8 @@ int 		KEY_FLAG			= 0;
 int 		OFNAME_FLAG 		= 0;
 int			ENCRYPTION_TYPE 	= 0;
 uint64_t	KAVACH_BINARY_SIZE 	= 0;
+uint64_t	ARCHIVE_SIZE 		= 0;
+uint64_t	PAGE_SIZE			= 0;
 std::string es;
 
 
@@ -35,6 +38,12 @@ int main (int argc, char **argv) {
 	parse_cmdline_args (argc, argv, password_key, pack_target, destination_dir, out_filename);
 	//fprintf (stderr, "%s, %s @ %s, out_filename %s\n", password_key.c_str(), pack_target.c_str(), destination_dir.c_str(), out_filename.c_str());
 
+	/* set globally shared PAGE_SIZE */
+	PAGE_SIZE = sysconf (_SC_PAGESIZE);
+	if (PAGE_SIZE == -1) {
+		log (__FILE__, __FUNCTION__, __LINE__, "while getting _SC_PAGESIZE");
+		return 1;
+	}
 
 	/* open kavach binary */
 	kfd = open (argv[0], O_RDONLY);
@@ -83,7 +92,7 @@ int main (int argc, char **argv) {
 		return 1;
 	}
 
-
+	
 	close (kfd);
 	return 0;	
 }

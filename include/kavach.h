@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <elf.h>
 #include <unistd.h>
+#include <sys/mman.h>
 #include <sys/sendfile.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -31,20 +32,25 @@
 
 
 /* MACROS */
-#define FILE_EXTENSION  ".kgs"              /* (k)avach (g)enerated (s)fx */
-#define PACK_SIGNATURE  0x4c41444e554b0000  /* Karn's KUNDAL (a pair of earrings) */
+#define SHDR_NAME       ".kavach"               /* Kavach shdr name */
+#define FILE_EXTENSION  ".kgs"                  /* (k)avach (g)enerated (s)fx */
+#define PACK_SIGNATURE  0x4c41444e554b0000      /* Karn's KUNDAL (a pair of earrings) */
 #define E_TYPE_NONE     0x0
 #define E_TYPE_XOR      0x1 
 
 /* shared data */
-extern int              DESTROY_RELICS;     /* flag set by --destroy-relics */
+extern int              DESTROY_RELICS;         /* flag set by --destroy-relics */
 extern int              UNPACK_FLAG;
 extern int              PACK_FLAG;
 extern int              KEY_FLAG;
-extern int              OFNAME_FLAG;        /* output filename */
+extern int              OFNAME_FLAG;            /* output filename */
 extern int              ENCRYPTION_TYPE;
-extern uint64_t         KAVACH_BINARY_SIZE;
+extern uint64_t         KAVACH_BINARY_SIZE;     /* size from offset 0 -> SHT end */
+extern uint64_t         ARCHIVE_SIZE;           /* size from SHT end  -> KBF end */
+extern uint64_t         PAGE_SIZE;              /* sysconf (_SC_PAGESIZE);  */
 extern std::string      es;
+
+
 
 /* -x--x-x-x-x-x-x-x-x-x-x-x- Blueprints -x-x-x-x--x-x-x-x-x-x-x-x- */
 
@@ -63,7 +69,7 @@ class Fhdr {
 public:
 
     enum ftype {
-        FT_UND  = 0,        /* undefined */
+        FT_UND  = 0,        /* undefined: represents a NULL Fhdr entry */
         FT_FILE = 1,        /* a file */
         FT_DIR  = 2         /* a directory */
     };
@@ -87,7 +93,11 @@ public:
                                             fh_times[0] -> last access time         : atime (st_atim)
                                             fh_times[1] -> last modification time   : mtime (st_mtim) s*/
 
-    /* Useful methods */	
+    /* Useful methods */
+    bool is_dir_end () {
+        return (this->fh_ftype == FT_UND) ? true: false;
+    }
+
     void dump(){
 		fprintf(stderr, "\n\t^^^^^^^^ File Header ^^^^^^^\n");
 		fprintf(stderr, "\tfh_namendx   : 0x%lx \n"
@@ -157,7 +167,7 @@ public:
  *      Describes the layout of Kavach binary format.                   *
  *                                                                      *
  * NOTE: It simply starts with a header (roadmap to FHT) followed by    * 
- *       the FHT itself.                                                *
+ *       the FHT, payload and nametab.                                  *
  *                                                                      *
  *                       ___________________   _                        *
  *                      |                   |   \ --->    KUNDAL        *
@@ -191,7 +201,7 @@ public:
  *                      |      -- Fhdr3     |   |                       *
  *                      |         ...       |   |                       *
  *                      |         ...       |   |                       *
- *                      |      -- FhdrN     |   | ===> Kavach Skeleton  *
+ *                      |      -- FhdrN     |   | ===> Kavach body      *
  *                      |___________________|   |                       *
  *                      |                   |   |                       *
  *                      |    [ Payload ]    |   |                       *

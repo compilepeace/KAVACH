@@ -13,7 +13,7 @@
 
 bool unpack (std::string &key) {
     /* check if this SFX binary posesses any user supplied files (termed as kavach payload) before unpacking */
-    /* check by checking SIGNATURE */
+    /* Identify packed binary by checking for KUNDAL */
 
     return true;
 }
