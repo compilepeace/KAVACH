@@ -3,27 +3,28 @@
  * Email    : compilepeace@gmail.com
  * Filename : kavach.cpp
  *
- * Description: Main launcher code for Kavach binary. Kavach generates sfx binar   
+ * Description: Main launcher code for Kavach.   
  *
 */
 
 #include "kavach.h"
 
-uint8_t 	shdr_entry	__attribute__ ((section (SHDR_NAME)));
-int 		DESTROY_RELICS 		= 0;
-int 		UNPACK_FLAG 		= 0;
-int			PACK_FLAG			= 0;
-int 		KEY_FLAG			= 0;
-int 		OFNAME_FLAG 		= 0;
-int			ENCRYPTION_TYPE 	= 0;
-uint64_t	KAVACH_BINARY_SIZE 	= 0;
-uint64_t	ARCHIVE_SIZE 		= 0;
-uint64_t	PAGE_SIZE			= 0;
-std::string es;
+uint8_t 		shdr_entry	__attribute__ ((section (SHDR_NAME)));
+int 			DESTROY_RELICS 			= 0;
+int 			UNPACK_FLAG 			= 0;
+int				PACK_FLAG				= 0;
+int 			KEY_FLAG				= 0;
+int 			OFNAME_FLAG 			= 0;
+Fhdr::encrypt	ENCRYPTION_TYPE 		= Fhdr::encrypt::FET_UND;
+uint64_t		KAVACH_BINARY_SIZE 		= 0;
+uint64_t		ARCHIVE_SIZE 			= 0;
+uint64_t		PAGE_SIZE				= 0;
+std::string 	es, ds;							
 
 
 /* function prototypes */
 bool get_kavach_binary_size (int kfd, uint64_t &KAVACH_BINARY_SIZE);
+bool validate_args			(std::string &password_key);
 
 
 
@@ -38,7 +39,13 @@ int main (int argc, char **argv) {
 	parse_cmdline_args (argc, argv, password_key, pack_target, destination_dir, out_filename);
 	//fprintf (stderr, "%s, %s @ %s, out_filename %s\n", password_key.c_str(), pack_target.c_str(), destination_dir.c_str(), out_filename.c_str());
 
-	/* set globally shared PAGE_SIZE */
+	/* validate cmd line args */
+	if (validate_args (password_key) == false) {
+		log (__FILE__, __FUNCTION__, __LINE__, "while validating supplied cmd line args");
+		return 1;
+	};
+
+	/* set globally shared PAGE_SIZE data member */
 	PAGE_SIZE = sysconf (_SC_PAGESIZE);
 	if (PAGE_SIZE == -1) {
 		log (__FILE__, __FUNCTION__, __LINE__, "while getting _SC_PAGESIZE");
@@ -57,40 +64,34 @@ int main (int argc, char **argv) {
 		log (__FILE__, __FUNCTION__, __LINE__, "while setting KAVACH_BINARY_SIZE.");
 		return 1;
 	}
+	
 
-	if (!KEY_FLAG) {
-		/* get secret key interactively if --key flag not set */
-		fprintf (stderr, "[-] Please provide the secret key: ");
-		getline (std::cin, password_key);
-	}
-
-
-	if ( PACK_FLAG | UNPACK_FLAG ) {
-		
-		if (PACK_FLAG) {
-			/* pack.cpp: pack target */
-			if ( pack (kfd, pack_target, password_key, out_filename) == false ) {
-				log ( __FILE__, __FUNCTION__, __LINE__, " couldn't pack the given target" );
-				exit (0xa);
+		if ( PACK_FLAG | UNPACK_FLAG ) {	
+			if (PACK_FLAG) {
+				/* [pack.cpp]: pack target */
+				if ( pack (kfd, pack_target, password_key, out_filename) == false ) {
+					log ( __FILE__, __FUNCTION__, __LINE__, " couldn't pack the given target" );
+					exit (0xa);
+				}
+				ds = "Packed files @ " + pack_target;
+				debug_msg (ds);
 			}
-			fprintf (stderr, BOLDGREEN "[+] " RESET "Packed %s.\n", pack_target.c_str());
+			if (UNPACK_FLAG) {
+				/* [unpack.cpp]: extract target */
+				if ( unpack (password_key) == false ) {
+					log ( __FILE__, __FUNCTION__, __LINE__, " couldn't unpack the given target" );
+					exit (0xb);
+				}
+				ds = "Unpacked files @ " + destination_dir;
+				debug_msg (ds);
+			}
 		}
 
-		if (UNPACK_FLAG) {
-			/* unpack.cpp: extract target */
-			if ( unpack (password_key) == false ) {
-				log ( __FILE__, __FUNCTION__, __LINE__, " couldn't unpack the given target" );
-				exit (0xb);
-			}
-			fprintf (stderr, BOLDGREEN "[+] " RESET "Unpacked files @ %s.\n", destination_dir.c_str());
+		else {
+			/* neither pack nor unpack flag is set by parse_cmdline_args() */
+			print_usage ();
+			return 1;
 		}
-	}
-
-	else {
-		/* neither pack nor unpack flag is set by parse_cmdline_args() */
-		print_usage ();
-		return 1;
-	}
 
 	
 	close (kfd);
@@ -130,4 +131,34 @@ bool get_kavach_binary_size (int kfd, uint64_t &KAVACH_BINARY_SIZE) {
 	}
 
 	return true;	
+}
+
+
+/* function to validate user supplied arguments supplied */
+bool validate_args (std::string &password_key) {
+	
+	/* validate Encryption type and password key supplied */
+	if (ENCRYPTION_TYPE == Fhdr::encrypt::FET_UND) {
+		if (KEY_FLAG) {
+			debug_msg ("launched in ARCHIVE ONLY mode, ignoring key...");
+			return true;
+		}
+			
+		else {
+			debug_msg ("launched in ARCHIVE ONLY mode...");
+			return true;
+		}
+	}
+	else if (!KEY_FLAG) {
+		/* get secret key interactively if --key flag not set */
+		while (password_key.length() == 0) {
+			fprintf (stderr, "[-] Please provide the secret key: ");
+			getline (std::cin, password_key);
+		}
+	}
+	else {
+		debug_msg ("launched in ENCRYPT mode...");
+	}
+
+	return true;
 }

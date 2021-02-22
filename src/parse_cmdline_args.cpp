@@ -72,10 +72,10 @@ void parse_cmdline_args (int argc, char **argv, std::string &password_key, std::
             case 'e':   /* --encrypt */
                         encryption_type = optarg;
                         if (encryption_type == "xor") {
-                            ENCRYPTION_TYPE = E_TYPE_XOR;
+                            ENCRYPTION_TYPE = Fhdr::encrypt::FET_XOR;
                         }
                         else {
-                            ENCRYPTION_TYPE = E_TYPE_NONE;
+                            ENCRYPTION_TYPE = Fhdr::encrypt::FET_UND;
                         }
                         break;
 

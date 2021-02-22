@@ -21,11 +21,11 @@ void dump_process_memory () {
 } 
 
 
-/* perror()s [string_err + __FUNCTION___] */
+/* perror() information to debug */
 void log (std::string source, std::string func, int line_no, std::string error_string) {
     
-    std::string es = BOLDRED "\t[-] " RESET "(" BOLDBLUE + source + RESET ", " BOLDGREEN 
-                     + func +  RESET ", " BOLDCYAN  + std::to_string(line_no) 
+    std::string es = BOLDRED "[-] " RESET "(" BOLDBLUE + source + RESET ", " YELLOW 
+                     + func +  RESET ", " CYAN  + std::to_string(line_no) 
                      + RESET ") => " + error_string;
                     
     char buffer[es.length() + 1];
@@ -33,6 +33,16 @@ void log (std::string source, std::string func, int line_no, std::string error_s
     sprintf (buffer, "%s", es.c_str());
     perror (buffer);
 }
+
+
+/* print debug messages to stderr */
+void debug_msg (std::string debug_string) {
+    
+    std::string ds = BOLDGREEN "[+] " MAGENTA + debug_string + RESET"\n";
+    
+    fprintf (stderr, "%s",ds.c_str());
+} 
+
 
 
 /* dump a range of memory : [addr, addr + len) */ 

@@ -3,7 +3,7 @@ OS	:= $(shell uname)
 ifeq ($(OS), Linux)
 
 MKDIR   := mkdir
-RMDIR   := rm -r
+RMDIR   := rm -rf
 CC      := g++
 BIN     := ./bin
 OBJ     := ./obj

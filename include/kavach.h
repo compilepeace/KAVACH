@@ -31,27 +31,6 @@
 #include <vector>
 
 
-/* MACROS */
-#define SHDR_NAME       ".kavach"               /* Kavach shdr name */
-#define FILE_EXTENSION  ".kgs"                  /* (k)avach (g)enerated (s)fx */
-#define PACK_SIGNATURE  0x4c41444e554b0000      /* Karn's KUNDAL (a pair of earrings) */
-#define E_TYPE_NONE     0x0
-#define E_TYPE_XOR      0x1 
-
-/* shared data */
-extern int              DESTROY_RELICS;         /* flag set by --destroy-relics */
-extern int              UNPACK_FLAG;
-extern int              PACK_FLAG;
-extern int              KEY_FLAG;
-extern int              OFNAME_FLAG;            /* output filename */
-extern int              ENCRYPTION_TYPE;
-extern uint64_t         KAVACH_BINARY_SIZE;     /* size from offset 0 -> SHT end */
-extern uint64_t         ARCHIVE_SIZE;           /* size from SHT end  -> KBF end */
-extern uint64_t         PAGE_SIZE;              /* sysconf (_SC_PAGESIZE);  */
-extern std::string      es;
-
-
-
 /* -x--x-x-x-x-x-x-x-x-x-x-x- Blueprints -x-x-x-x--x-x-x-x-x-x-x-x- */
 
 /************************************************************************
@@ -75,7 +54,7 @@ public:
     };
 
     enum encrypt {
-        FET_UND = 0,        /* NO encryption - archive only*/
+        FET_UND = 0,        /* NO encryption - archive only */
         FET_XOR = 1         /* XOR encryption */
     };
 
@@ -232,6 +211,8 @@ public:
 };
 
 
+
+/* -x--x-x-x-x-x-x-x-x-x-x-x- MACROS -x--x-x-x-x-x-x-x-x-x-x-x- */
 #define RESET   "\033[0m"
 #define BLACK   "\033[30m"      /* Black */
 #define RED     "\033[31m"      /* Red */
@@ -249,6 +230,24 @@ public:
 #define BOLDMAGENTA "\033[1m\033[35m"      /* Bold Magenta */
 #define BOLDCYAN    "\033[1m\033[36m"      /* Bold Cyan */
 #define BOLDWHITE   "\033[1m\033[37m"      /* Bold White */
+
+#define SHDR_NAME       ".kavach"               /* Kavach shdr name                     */
+#define FILE_EXTENSION  ".kgs"                  /* (k)avach (g)enerated (s)fx           */
+#define PACK_SIGNATURE  0x4c41444e554b0000      /* Karn's KUNDAL (a pair of earrings)   */
+
+
+/* shared data */
+extern int              DESTROY_RELICS;         /* flag set by --destroy-relics         */
+extern int              UNPACK_FLAG;
+extern int              PACK_FLAG;
+extern int              KEY_FLAG;
+extern int              OFNAME_FLAG;            /* output filename                      */
+extern Fhdr::encrypt    ENCRYPTION_TYPE;
+extern uint64_t         KAVACH_BINARY_SIZE;     /* size from offset 0 -> SHT end        */
+extern uint64_t         ARCHIVE_SIZE;           /* size from SHT end  -> KBF end        */
+extern uint64_t         PAGE_SIZE;              /* sysconf (_SC_PAGESIZE);              */
+extern std::string      es, ds;                 /* error|debug strings                  */
+
 
 
 
@@ -272,11 +271,18 @@ bool unpack                 (std::string &password_key);
 void parse_cmdline_args     (int argc, char **argv, std::string &password_key, std::string &pack_target, std::string &destination_dir, std::string &out_filename);
 void print_usage            ();
 
+/* encrypt.o */
+namespace SCRAMBLE {
+    bool encrypt            (std::vector<uint8_t> &payload, std::string &key, Fhdr::encrypt &etype);
+}
+void pxor                   (std::vector<uint8_t> &payload, std::string &key);
+
 
 /* helper.o */
-void dump_process_memory    ();                                         /* cat /proc/self/maps */
+void dump_process_memory    ();                                         /* read /proc/self/maps */
 void dump_memory_range      (void *addr, size_t len);                   /* dump a region of memory */
 void log                    (std::string source, std::string function, int line_no, std::string error_string);
+void debug_msg              (std::string debug_msg);
 void mmap_error             (std::string error_string, int &error);    
 void sendfile_error         (std::string error_string, int &error);
 

@@ -14,13 +14,13 @@
 /* Function Prototypes */
 static int      create_copy             (std::string &out_filename, int kfd);
 static bool     inject_signature        (int fd, uint64_t signature);
-static bool     load_kavach_object      (std::string &target_path, Kavach &ko);
-static bool     load_fpn                (std::string &target_path, std::vector<Fhdr> &fht, std::vector<char> &nametab, std::vector<std::vector<uint8_t>> &payload);
+static bool     load_kavach_object      (std::string &target_path, Kavach &ko, std::string &key);
+static bool     load_fpn                (std::string &target_path, std::vector<Fhdr> &fht, std::vector<char> &nametab, std::vector<std::vector<uint8_t>> &payload, std::string &key);
 static char*    create_string_copy      (std::string &original_string);
 static ssize_t  add_to_nametab          (std::string &target_path, std::vector<char> &nametab, bool is_dir);
-static uint64_t load_archive_payload    (std::string &target_path, const uint64_t &size, std::vector< std::vector<uint8_t> > &payload);
+static uint64_t load_archive_payload    (std::string &target_path, const uint64_t &size, std::vector< std::vector<uint8_t> > &payload, std::string &key, Fhdr::encrypt &etype);
 static bool     attach_ko               (int sfxfd, Kavach &ko);
-static bool     patch_sfx_metadata            (int sfxfd, uint8_t *map, Kavach &ko);
+static bool     patch_sfx_metadata      (int sfxfd, uint8_t *map, Kavach &ko);
 
 /* [pack.cpp]: global data */
 static uint64_t total_archive_size  = 0;
@@ -57,7 +57,7 @@ bool pack (int kfd, std::string &target_path, std::string &key, std::string &of_
     inject_signature (sfxfd, PACK_SIGNATURE);
 
     /* load Kavach object */
-    if (load_kavach_object (target_path, ko) == false) {
+    if (load_kavach_object (target_path, ko, key) == false) {
         log (__FILE__, __FUNCTION__, __LINE__, "while loading Kavach File Header Table");
         return false;
     }
@@ -123,7 +123,7 @@ static bool patch_sfx_metadata (int sfxfd, uint8_t *map, Kavach &ko) {
             kvaddr  = pht[i].p_vaddr + pht[i].p_memsz;          /* kvaddr will be placed in next segment */
             kvaddr += (PAGE_SIZE - (kvaddr % PAGE_SIZE));       /* since all segments are PAGE_SIZE aligned,
                                                                    this makes kvaddr PAGE_SIZE aligned */
-            
+
             /********************************************************************
              * Lets make kvaddr congurent to (kshdr.p_offset % p_align). Now,   *
              * p_offset will be same as kshdr.sh_offset == KAVACH_BINARY_SIZE & *
@@ -157,8 +157,7 @@ static bool patch_sfx_metadata (int sfxfd, uint8_t *map, Kavach &ko) {
         }
     }
 
-
-    // kshdr.sh_name already set by compiler  ^_^ 
+ 
     kshdr.sh_type       = SHT_PROGBITS;
     kshdr.sh_flags      = SHF_ALLOC;
     kshdr.sh_addr       = kvaddr;               /* calculated via last PT_LOAD attributes */
@@ -174,7 +173,9 @@ static bool patch_sfx_metadata (int sfxfd, uint8_t *map, Kavach &ko) {
     for (int i = 0; i < (ehdr->e_shnum); ++i) {
         section_name = &shstrtab[sht[i].sh_name];
         if ( section_name == SHDR_NAME) {
+            kshdr.sh_name = sht[i].sh_name;                 /* already set by compiler  ^_^ */
             memmove (&sht[i], &kshdr, sizeof(Elf64_Shdr));
+            break;
         }
     }
 
@@ -184,16 +185,16 @@ static bool patch_sfx_metadata (int sfxfd, uint8_t *map, Kavach &ko) {
 
 
 /* load Kavach object with the content of target (file/directory).  */
-static bool load_kavach_object (std::string &target_path, Kavach &ko) {
+static bool load_kavach_object (std::string &target_path, Kavach &ko, std::string &key) {
 
     /* load FHT, archive payload & nametab */
-    if (load_fpn (target_path, ko.fht, ko.nametab, ko.payload) == false) {
+    if (load_fpn (target_path, ko.fht, ko.nametab, ko.payload, key) == false) {
         log (__FILE__, __FUNCTION__, __LINE__, "while loading kavach FHT");
         return false;
     }
 
-    /* load kavach binary header (kbhdr) -  performed at the time of writing all        *
-     * components of Kavach object to SFX binary.                                       */
+    /* load kavach binary header (kbhdr) -  performed at the time of writing all    *
+     * components of Kavach object to SFX binary.                                   */
 
     return true;
 }
@@ -201,7 +202,8 @@ static bool load_kavach_object (std::string &target_path, Kavach &ko) {
 
 
 /* Loads FHT, archive payload (i.e. a vector of strings) and nametab. Depth first recursive parsing is used to create FHT */
-static bool load_fpn (std::string &target_path, std::vector<Fhdr> &fht, std::vector<char> &nametab, std::vector<std::vector<uint8_t>> &payload) {
+static bool load_fpn (std::string &target_path, std::vector<Fhdr> &fht, std::vector<char> &nametab,
+                      std::vector<std::vector<uint8_t>> &payload, std::string &key) {
 
     struct stat tsb;        /* target stat buffer */
     Fhdr cur_fhdr;          /* current file header */
@@ -214,13 +216,8 @@ static bool load_fpn (std::string &target_path, std::vector<Fhdr> &fht, std::vec
         }
         
             /* Loading file attributes into Fhdr */ 
-            cur_fhdr.fh_offset = 0;                     // set for S_ISDIR(). for S_ISREG(), it is set to cur_payload_offset 
-            if (ENCRYPTION_TYPE == E_TYPE_NONE) {
-                cur_fhdr.fh_etype = Fhdr::FET_UND;
-            }
-            else if (ENCRYPTION_TYPE == E_TYPE_XOR) {
-                cur_fhdr.fh_etype = Fhdr::FET_XOR;
-            }
+            cur_fhdr.fh_offset  = 0;                     // set for S_ISDIR(). for S_ISREG(), it is set to cur_payload_offset 
+            cur_fhdr.fh_etype   = ENCRYPTION_TYPE;
             cur_fhdr.fh_mode    = tsb.st_mode;
             cur_fhdr.fh_size    = tsb.st_size;
             // while unpacking, we use futimens() that will use this fhdr's timestamp /
@@ -231,6 +228,9 @@ static bool load_fpn (std::string &target_path, std::vector<Fhdr> &fht, std::vec
         /* file encountered */
         if  ( S_ISREG (tsb.st_mode) ) {
             
+            ds = "\tpacking: " + target_path;
+            debug_msg (ds);
+
             /* Load filetype and nametable index attribute of cur_fhdr (implicitly adding filename into nametab vector) */            
             cur_fhdr.fh_ftype   = Fhdr::FT_FILE;
             cur_fhdr.fh_offset  = cur_payload_offset;
@@ -242,7 +242,7 @@ static bool load_fpn (std::string &target_path, std::vector<Fhdr> &fht, std::vec
             }
 
             /* Load archive payload */
-            uint64_t payload_size = load_archive_payload (target_path, tsb.st_size, payload);
+            uint64_t payload_size = load_archive_payload (target_path, tsb.st_size, payload, key, cur_fhdr.fh_etype);
             if ( payload_size == -1) {
                 log (__FILE__, __FUNCTION__, __LINE__, "while loading archive payload");
                 return false;
@@ -260,8 +260,11 @@ static bool load_fpn (std::string &target_path, std::vector<Fhdr> &fht, std::vec
             std::string current_dir = ".";
             std::string parent_dir  = "..";
 
+            ds = "\tpacking: " + target_path;
+            debug_msg (ds);
+
             /* Load filetype attribute, add filename into nametab vector and append cur_fhdr to FHT */
-            cur_fhdr.fh_ftype = Fhdr::FT_DIR;
+            cur_fhdr.fh_ftype   = Fhdr::FT_DIR;
             cur_fhdr.fh_namendx = add_to_nametab (target_path, nametab, true);
             if (cur_fhdr.fh_namendx != (uint64_t ) -1) {
                 fht.push_back (cur_fhdr);
@@ -282,7 +285,7 @@ static bool load_fpn (std::string &target_path, std::vector<Fhdr> &fht, std::vec
                         if ( (dent->d_type == DT_DIR || dent->d_type == DT_REG) &&
                              (dent->d_name != current_dir && dent->d_name != parent_dir) ) {
                             std::string new_target_path = target_path + "/" + dent->d_name;
-                            load_fpn (new_target_path, fht, nametab, payload);
+                            load_fpn (new_target_path, fht, nametab, payload, key);
                         }
                     }
 
@@ -413,7 +416,8 @@ static char *create_string_copy (std::string &os) {
 
 
 /* loads the content of <target_path> filename to payload vector. Returns 'payload size' or -1 on failure */
-static uint64_t load_archive_payload (std::string &path, const uint64_t &size, std::vector<std::vector<uint8_t>> &payload) {
+static uint64_t load_archive_payload ( std::string &path, const uint64_t &size, std::vector<std::vector<uint8_t>> &payload,
+                                       std::string &key, Fhdr::encrypt &etype) {
     
     int afd;
     std::vector<uint8_t> archive_content;
@@ -434,6 +438,12 @@ static uint64_t load_archive_payload (std::string &path, const uint64_t &size, s
         return -1;
     }
 
+    /*  If user supplied --encrypt and --key flags,         * 
+     *  scramble <archive_content> with user-supplied <key> */
+    if (etype != Fhdr::encrypt::FET_UND) {
+        SCRAMBLE::encrypt (archive_content, key, etype);
+    }
+        
     payload.push_back (archive_content);
     
     
