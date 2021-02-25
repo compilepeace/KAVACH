@@ -238,7 +238,7 @@ bool destroy_relics (std::string &pathname, std::stack<int> &dfds) {
 			dentry_name = dentry->d_name;
 			if (dentry_name != "." && dentry_name != "..") {					
 					/* if any error occured while reading directory entries */
-					if (errno != 0) {
+					if (errno != 0 && errno != EBADF) {
 						es = "while reading directory entries for: " + dentry_name;
 						log (__FILE__, __FUNCTION__, __LINE__, es);
 						errno = 0;

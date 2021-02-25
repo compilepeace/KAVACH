@@ -69,7 +69,10 @@ bool unpack (int sfxfd, std::string &target_location, std::string &key) {
     }
 
     /* parse kavach binary format */
-    extract (map + remainder, entry_dirfd, key);
+    if (extract (map + remainder, entry_dirfd, key) == false) {
+        log (__FILE__, __FUNCTION__, __LINE__, "while extracting kbf");
+        return false;
+    }
 
 
     close (entry_dirfd);
