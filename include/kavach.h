@@ -1,12 +1,13 @@
-/*
- * Author   : Abhinav Thakur
- * Email    : compilepeace@gmail.com
- * Filename : kavach.h
- *
- * Description: This module provides an API to other object code binaries along with defining
- *              kavach binary format (kbf).  
- *
-*/
+/********************************************************************************
+ * Author   : Abhinav Thakur                                                    *
+ * Email    : compilepeace@gmail.com                                            *
+ * Filename : kavach.h                                                          *
+ *                                                                              *
+ * Description: This module provides an API to other object code binaries along *
+ *              with defining kavach binary format (kbf).                       *
+ *                                                                              * 
+ ********************************************************************************/
+
 
 #ifndef _KAVACH_H
 #define _KAVACH_H
@@ -29,6 +30,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <stack>
 
 
 /* -x--x-x-x-x-x-x-x-x-x-x-x- Blueprints -x-x-x-x--x-x-x-x-x-x-x-x- */
@@ -221,6 +223,7 @@ public:
 #define BLUE    "\033[34m"      /* Blue */
 #define MAGENTA "\033[35m"      /* Magenta */
 #define CYAN    "\033[36m"      /* Cyan */
+#define GREY    "\e[37m"        /* Grey */
 #define WHITE   "\033[37m"      /* White */
 #define BOLDBLACK   "\033[1m\033[30m"      /* Bold Black */
 #define BOLDRED     "\033[1m\033[31m"      /* Bold Red */
@@ -230,6 +233,17 @@ public:
 #define BOLDMAGENTA "\033[1m\033[35m"      /* Bold Magenta */
 #define BOLDCYAN    "\033[1m\033[36m"      /* Bold Cyan */
 #define BOLDWHITE   "\033[1m\033[37m"      /* Bold White */
+#define BOLDGREY    "\e[90m"               /* Bold Grey */
+
+#define BRIGHT      "\e[1m"
+#define DIM         "\e[2m"
+#define UNDERLINE   "\e[4m"
+#define BLINK       "\e[5m"
+#define INVERT      "\e[7m"
+#define HIDDEN      "\e[8m"     /* useful for passwords */
+//#define ORANGE      “\e[38;5;202m” 
+
+
 
 #define SHDR_NAME       ".kavach"               /* Kavach shdr name                     */
 #define FILE_EXTENSION  ".kgs"                  /* (k)avach (g)enerated (s)fx           */
@@ -265,7 +279,7 @@ extern std::string      es, ds;                 /* error|debug strings          
 bool pack                   (int kfd, std::string &pack_target, std::string &password_key, std::string &out_filename);
 
 /* unpack.o */
-bool unpack                 (std::string &password_key);
+bool unpack                 (int kfd, std::string &target_location, std::string &password_key);
 
 /* parse_cmdline_args.o */
 void parse_cmdline_args     (int argc, char **argv, std::string &password_key, std::string &pack_target, std::string &destination_dir, std::string &out_filename);
@@ -276,6 +290,11 @@ namespace SCRAMBLE {
     bool encrypt            (std::vector<uint8_t> &payload, std::string &key, Fhdr::encrypt &etype);
 }
 void pxor                   (std::vector<uint8_t> &payload, std::string &key);
+
+/* decrypt.o */
+namespace DESCRAMBLE {
+    bool decrypt            (std::vector<uint8_t> &payload, std::string &key, Fhdr::encrypt &etype);
+}
 
 
 /* helper.o */

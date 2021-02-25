@@ -1,13 +1,13 @@
 /********************************************************************************
  * Author   : Abhinav Thakur                                                    *
  * Email    : compilepeace@gmail.com                                            *
- * Filename : encrypt.cpp                                                       *
+ * Filename : decrypt.cpp                                                       *
  *                                                                              *
- * Description: Module responsible for scrambling payload with specific         *
- *              encryption algorithms.                                          *
- *              Declared under SCRAMBLE namespace (in kavach.h).                *
+ * Description: Module responsible for descrambling payload with respective     *
+ *              decryption algorithms.                                          *
+ *              Declared under DESCRAMBLE namespace (in kavach.h).              *
  *                                                                              *
- * Code Flow: <main> => <pack> => <load_archive_payload> => <encrypt>           *
+ * Code Flow: <main> => <unpack> => <extract> => <decrypt>                      *
  *                                                                              * 
  ********************************************************************************/
 
@@ -15,16 +15,15 @@
 
 
 /* function prototypes */
-void pxor (std::vector<uint8_t> &payload, std::string &key);
 
 
-namespace SCRAMBLE {
+namespace DESCRAMBLE {
 
-    /* encrypts the <payload> using encryption type <etype> and password <key> */
-    bool encrypt (std::vector<uint8_t> &payload, std::string &key, Fhdr::encrypt &etype) {
+    /* decrypts the <payload> for encryption type <etype> with password <key> */
+    bool decrypt (std::vector<uint8_t> &payload, std::string &key, Fhdr::encrypt &etype) {
 
         if (key.length() == 0) {
-            log (__FILE__, __FUNCTION__, __LINE__, "encryption key not present, ARCHIVE ONLY mode set");
+            log (__FILE__, __FUNCTION__, __LINE__, "decryption key not present, ARCHIVE ONLY mode set");
             return true;
         }
 
@@ -40,16 +39,5 @@ namespace SCRAMBLE {
         }
 
         return true;
-    }
-}
-    
-
-/* Payload XOR: xor each byte of <payload> using <key> */
-void pxor (std::vector<uint8_t> &payload, std::string &key) {
-    
-    uint64_t ksize = key.length();
-
-    for (int i = 0; i < payload.size(); ++i) {
-        payload[i] = payload[i] ^ key[ i % ksize ];
     }
 }

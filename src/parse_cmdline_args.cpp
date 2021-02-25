@@ -1,14 +1,14 @@
-/*
- * Author   : Abhinav Thakur
- * Email    : compilepeace@gmail.com
- * Filename : parse_cmdline_args.cpp
- *
- * Description: Module responsible for getting password, unpack_target
- *              and pack_target command line arguments from end user.
- * 
- * Code Flow: <main> => <parse_cmdline_args>   
- *
-*/
+/********************************************************************************
+ * Author   : Abhinav Thakur                                                    *
+ * Email    : compilepeace@gmail.com                                            *
+ * Filename : parse_cmdline_args.cpp                                            *
+ *                                                                              *
+ * Description: Module responsible for getting password, target_location        *
+ *              and pack_target command line arguments from end user.           *
+ *                                                                              *
+ * Code Flow: <main> => <parse_cmdline_args>                                    *
+ *                                                                              * 
+ ********************************************************************************/
 
 
 #include <getopt.h>
@@ -17,7 +17,7 @@
 
 
 /* Parse cmd line flags to get information that deceides further program flow */
-void parse_cmdline_args (int argc, char **argv, std::string &password_key, std::string &pack_target, std::string &destination_dir, std::string &out_filename) {
+void parse_cmdline_args (int argc, char **argv, std::string &password_key, std::string &pack_target, std::string &target_location, std::string &out_filename) {
     
     std::string encryption_type;
     static struct option long_options[] = {
@@ -58,8 +58,8 @@ void parse_cmdline_args (int argc, char **argv, std::string &password_key, std::
                         break;
 
             case 'u':   /* --unpack */
-                        destination_dir = optarg;
-                        if (!destination_dir.empty())
+                        target_location = optarg;
+                        if (!target_location.empty())
                             UNPACK_FLAG = 1;
                         break;
 
@@ -95,13 +95,17 @@ void parse_cmdline_args (int argc, char **argv, std::string &password_key, std::
 
 void print_usage () {
 
-    std::cout << "\n[-] Usage: kavach [-p <target> | -u <target>] -k <key> [-dh]\n"
-              << "\t-p | --pack   <target_location>         : pack target @ (dir|file) location\n"
-              << "\t-d | --destroy-relics                   : delete all files after packing into kavach generated SFX binary\n"
-              << "\t-o | --output                           : output filename for kavach generated SFX binary\n"
-              << "\t-u | --unpack <destination_directory>   : unpack the data content @ destination_directory\n"
-              << "\t-k | --key    <password_key>            : password key to pack|unpack\n"
-              << "\t-h | --help                             : display help\n"
-              << "\nNOTE: By default, kavach doesn't delete the files after packing.\n\n";
+    std::cout << "\n" BOLDRED
+              << "[-]" BOLDCYAN
+              << " Usage: " BOLDGREEN "kavach " BOLDWHITE "[-p <target> | -u <target>] -k <key> [-dh]\n\t" RESET
+              << BOLDBLUE "-p" RESET " | " BOLDBLUE "--pack    <target_location>        " RESET ":" DIM YELLOW " pack target @ (dir|file) location\n\t" RESET
+              << BOLDBLUE "-d" RESET " | " BOLDBLUE "--destroy-relics                   " RESET ":" DIM YELLOW " delete all files after packing into kavach generated SFX binary\n\t" RESET
+              << BOLDBLUE "-o" RESET " | " BOLDBLUE "--output                           " RESET ":" DIM YELLOW " output filename for kavach generated SFX binary\n\t" RESET
+              << BOLDBLUE "-u" RESET " | " BOLDBLUE "--unpack  <target_location>        " RESET ":" DIM YELLOW " unpack the data content to target_location\n\t" RESET
+              << BOLDBLUE "-e" RESET " | " BOLDBLUE "--encrypt <encrytion_type>         " RESET ":" DIM YELLOW " encrypt the payload before archiving\n\t" RESET
+              << BOLDBLUE "-k" RESET " | " BOLDBLUE "--key     <password_key>           " RESET ":" DIM YELLOW " password key to pack|unpack\n\t" RESET
+              << BOLDBLUE "-h" RESET " | " BOLDBLUE "--help                             " RESET ":" DIM YELLOW " display help\n\t" RESET
+              << "\n" RED 
+              << "NOTE" RESET ": By default, kavach doesn't delete the files after packing.\n\n";
     exit (1);
 }

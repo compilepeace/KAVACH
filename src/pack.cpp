@@ -1,13 +1,15 @@
-/*
- * Author   : Abhinav Thakur
- * Email    : compilepeace@gmail.com
- * Filename : pack.cpp
- *
- * Description: Module responsible for packing target files into <[of_name].kgs> binary.
- * 
- * Code Flow: <main> => <pack>   
- *
-*/
+/********************************************************************************
+ * Author   : Abhinav Thakur                                                    *
+ * Email    : compilepeace@gmail.com                                            *
+ * Filename : pack.cpp                                                          *
+ *                                                                              *
+ * Description: Module responsible for packing target files into                *
+ *              <[of_name].kgs> binary.                                         *
+ *                                                                              *
+ * Code Flow: <main> => <pack>                                                  *
+ *                                                                              * 
+ ********************************************************************************/
+
 
 #include "kavach.h"
 
@@ -62,12 +64,6 @@ bool pack (int kfd, std::string &target_path, std::string &key, std::string &of_
         return false;
     }
 
-    /* print nametab */
-    // for (auto hdr: ko.fht) {
-    //     hdr.dump();
-    //     fprintf (stderr, "index: %ld: str: %s\n", hdr.fh_namendx, &ko.nametab[hdr.fh_namendx]);
-    // }
-
 
     /* write Kavach object to End Of Kavach binary (sfxfd). Populate Kavach   *
      * Header too before writing                                            */
@@ -83,14 +79,13 @@ bool pack (int kfd, std::string &target_path, std::string &key, std::string &of_
         return false;
     }
 
-    /* tamper SHT - patch .kavach shdr entriy to account for kbf (kavach    *
-     * binary format). This is done to ensure that programs like `strip`    * 
-     * doesn't remove unaccounted archived content.                         */
+    /********************************************************************
+     * Tamper SHT & PHT                                                 *
+     * > Patch .kavach shdr entry to account for kbf (kavach binary     *
+     *   format). This is done to ensure that programs like `strip`     *
+     *   doesn't remove unaccounted archived content.                   *
+     ********************************************************************/
     patch_sfx_metadata (sfxfd, map, ko);
-
-
-    /* tamper PHT - convert PT_NOTE to PT_LOAD section to accomodate kavach *
-     * binary format (kbf)                                                  */
 
 
     munmap ((void *)map, sfxsb.st_size);
@@ -105,33 +100,33 @@ bool pack (int kfd, std::string &target_path, std::string &key, std::string &of_
 static bool patch_sfx_metadata (int sfxfd, uint8_t *map, Kavach &ko) {
 
     Elf64_Shdr  kshdr;
-    Elf64_Phdr  kphdr;
+    // Elf64_Phdr  kphdr;
     Elf64_Ehdr  *ehdr       = (Elf64_Ehdr *) map;
     Elf64_Shdr  *sht        = (Elf64_Shdr *) &map[ehdr->e_shoff];
-    Elf64_Phdr  *pht        = (Elf64_Phdr *) &map[ehdr->e_phoff];
+    // Elf64_Phdr  *pht        = (Elf64_Phdr *) &map[ehdr->e_phoff];
     char        *shstrtab   = (char *) &map[sht[ehdr->e_shstrndx].sh_offset];
     std::string section_name;
-    uint64_t    kvaddr;
+    // uint64_t    kvaddr;
 
-
-    /* parse pht: to calculate virtual memory address (p_vaddr) */
+/*
+    // parse pht: to calculate virtual memory address (p_vaddr)
     for (int i = (ehdr->e_phnum - 1); i >= 0; --i) {
 
-        /* we want archive content to be loaded after the last PT_LOAD segment */
+        // we want archive content to be loaded after the last PT_LOAD segment 
         if (pht[i].p_type == PT_LOAD) {
 
-            kvaddr  = pht[i].p_vaddr + pht[i].p_memsz;          /* kvaddr will be placed in next segment */
-            kvaddr += (PAGE_SIZE - (kvaddr % PAGE_SIZE));       /* since all segments are PAGE_SIZE aligned,
-                                                                   this makes kvaddr PAGE_SIZE aligned */
+            kvaddr  = pht[i].p_vaddr + pht[i].p_memsz;          // kvaddr will be placed in next segment 
+            kvaddr += (PAGE_SIZE - (kvaddr % PAGE_SIZE));       // since all segments are PAGE_SIZE aligned,
+                                                                // this makes kvaddr PAGE_SIZE aligned 
 
-            /********************************************************************
-             * Lets make kvaddr congurent to (kshdr.p_offset % p_align). Now,   *
-             * p_offset will be same as kshdr.sh_offset == KAVACH_BINARY_SIZE & *
-             * p_align  i.e. PAGE_SIZE (usually 0x1000).                        *
-             *                                                                  *
-             * Congruency constraint is mentioned in ELF specification v1.2.    *
-             * p_vaddr += (p_offset % p_align) - (p_vaddr % p_align)            *
-             ********************************************************************/
+            // ********************************************************************
+            //  * Lets make kvaddr congurent to (kshdr.p_offset % p_align). Now,   *
+            //  * p_offset will be same as kshdr.sh_offset == KAVACH_BINARY_SIZE & *
+            //  * p_align  i.e. PAGE_SIZE (usually 0x1000).                        *
+            //  *                                                                  *
+            //  * Congruency constraint is mentioned in ELF specification v1.2.    *
+            //  * p_vaddr += (p_offset % p_align) - (p_vaddr % p_align)            *
+            //  ********************************************************************
             int n   = (KAVACH_BINARY_SIZE % PAGE_SIZE) - (kvaddr % PAGE_SIZE);
             kvaddr += n; 
 
@@ -148,19 +143,20 @@ static bool patch_sfx_metadata (int sfxfd, uint8_t *map, Kavach &ko) {
     kphdr.p_flags       = PF_R;
     kphdr.p_align       = PAGE_SIZE;
 
-    /* parse pht: convert first PT_NOTE segment encountered to PT_LOAD  *
-     * and replace it by kavach phdr                                    */
+    //  * parse pht: convert first PT_NOTE segment encountered to PT_LOAD  *
+    //  * and replace it by kavach phdr                                    *
     for (int i = 0; i < (ehdr->e_phnum); ++i) {
         if (pht[i].p_type == PT_NOTE) {
             memmove (&pht[i], &kphdr, sizeof (Elf64_Phdr));
             break;
         }
     }
-
+*/
  
     kshdr.sh_type       = SHT_PROGBITS;
     kshdr.sh_flags      = SHF_ALLOC;
-    kshdr.sh_addr       = kvaddr;               /* calculated via last PT_LOAD attributes */
+    //kshdr.sh_addr       = kvaddr;               /* calculated via last PT_LOAD attributes */
+    kshdr.sh_addr       = KAVACH_BINARY_SIZE;
     kshdr.sh_offset     = KAVACH_BINARY_SIZE;
     kshdr.sh_size       = ARCHIVE_SIZE;
     kshdr.sh_link       = 0;
@@ -456,28 +452,26 @@ static uint64_t load_archive_payload ( std::string &path, const uint64_t &size, 
 
 
 
-/* writes kavach object to SFX binary represented by <sfxfd> in addition to loading ko.header. *
- * Returns false on failure */
+/***********************************************************************************************
+ * writes kavach object to SFX binary represented by <sfxfd> in addition to loading ko.header. *
+ * Returns false on failure.                                                                   *
+ * NOTE: All offsets being written to kavach binary header are relative offsets (to the start  *
+ *       of Kbhdr (unpack it accordingly).                                                     *
+ ***********************************************************************************************/
 static bool attach_ko (int sfxfd, Kavach &ko) {
     
-    uint64_t kavach_start;
     uint64_t bytes_written;
     uint64_t write_size;
+    uint64_t offset;
 
-
-    /* get offset of to start of kavach binary format (Kbhdr) */
-    kavach_start =  lseek (sfxfd, 0, SEEK_END);
-    if (kavach_start == -1) {
-        log (__FILE__, __FUNCTION__, __LINE__, "while lseek'ing to the end of SFX binary");
-        return false;
-    }
 
     /* seek to the end of file + sizeof(Kbhdr) */
-    ko.header.k_fhtoff = lseek (sfxfd, sizeof(Kbhdr), SEEK_END);
-    if ( ko.header.k_fhtoff == -1 ) {
+    offset = lseek (sfxfd, sizeof(Kbhdr), SEEK_END);
+    if ( offset == -1 ) {
         log (__FILE__, __FUNCTION__, __LINE__, "while lseek'ing to the end of SFX + sizeof(Kbhdr)");
         return false;
     }
+    ko.header.k_fhtoff = offset - KAVACH_BINARY_SIZE;   
 
     /* write FHT */
     ko.header.k_fhentsize   = sizeof (Fhdr);
@@ -494,11 +488,12 @@ static bool attach_ko (int sfxfd, Kavach &ko) {
     }
 
     /* write archive payload */
-    ko.header.k_payloadoff = lseek (sfxfd, 0, SEEK_CUR);
-    if (ko.header.k_payloadoff == -1) {
+    offset = lseek (sfxfd, 0, SEEK_CUR);
+    if (offset == -1) {
         log (__FILE__, __FUNCTION__, __LINE__, "while loading ko.header.k_payloadoff (lseek failed)");
         return false;
     }
+    ko.header.k_payloadoff = offset - KAVACH_BINARY_SIZE;
 
     uint64_t current_offset = 0;
     for (auto file: ko.payload) {
@@ -517,16 +512,16 @@ static bool attach_ko (int sfxfd, Kavach &ko) {
         log (__FILE__, __FUNCTION__, __LINE__, "Payload not completely written to SFX binary");
         return false;
     }
-    // else 
-    //     fprintf (stderr, "Payload successfully written to SFX binary\n");
 
 
     /* write names table to file */
-    ko.header.k_nametaboff = lseek (sfxfd, 0, SEEK_CUR);
-    if (ko.header.k_nametaboff == -1) {
+    offset = lseek (sfxfd, 0, SEEK_CUR);
+    if (offset == -1) {
         log (__FILE__, __FUNCTION__, __LINE__, "while loading ko.header.nametaboff (lseek failed)");
         return false;
     }
+    ko.header.k_nametaboff = offset - KAVACH_BINARY_SIZE;
+
     write_size = ko.nametab.size();
     if (write (sfxfd, &ko.nametab[0], write_size) != write_size) {
         log (__FILE__, __FUNCTION__, __LINE__, "while writing ko.nametab to SFX binary");
@@ -534,18 +529,18 @@ static bool attach_ko (int sfxfd, Kavach &ko) {
     }
 
     /* getting size of archive (excluding size of SFX) */
-    ARCHIVE_SIZE = lseek (sfxfd, 0, SEEK_CUR);
-    if (ARCHIVE_SIZE == -1) {
+    offset = lseek (sfxfd, 0, SEEK_CUR);
+    if (offset == -1) {
         log (__FILE__, __FUNCTION__, __LINE__, "while leek'ing to KBF end (getting ARCHIVE_SIZE)");
         return false;
     }
     else {
-        ARCHIVE_SIZE = ARCHIVE_SIZE - KAVACH_BINARY_SIZE;
+        ARCHIVE_SIZE = offset - KAVACH_BINARY_SIZE;
     }
 
     /* pwrite kavach binary header @ end of SFX's SHT == kavach_start */
     write_size = sizeof(Kbhdr);
-    if (pwrite (sfxfd, &ko.header, write_size, kavach_start) != write_size) {
+    if (pwrite (sfxfd, &ko.header, write_size, KAVACH_BINARY_SIZE) != write_size) {
          log (__FILE__, __FUNCTION__, __LINE__, "while writing kavach header to SFX binary");
          return false;
     }

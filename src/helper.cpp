@@ -1,3 +1,14 @@
+/********************************************************************************
+ * Author   : Abhinav Thakur                                                    *
+ * Email    : compilepeace@gmail.com                                            *
+ * Filename : helper.cpp                                                        *
+ *                                                                              *
+ * Description: A module containing some helper functions for the ease of       * 
+ *              development & debugging                                         *
+ *                                                                              *
+ * Code Flow: All functions present here are exported as API via <kavach.h>.    *
+ *                                                                              * 
+ ********************************************************************************/
 
 
 #include "kavach.h"
@@ -30,7 +41,7 @@ void log (std::string source, std::string func, int line_no, std::string error_s
                     
     char buffer[es.length() + 1];
 
-    sprintf (buffer, "%s", es.c_str());
+    sprintf (buffer, " %s", es.c_str());
     perror (buffer);
 }
 
@@ -40,7 +51,7 @@ void debug_msg (std::string debug_string) {
     
     std::string ds = BOLDGREEN "[+] " MAGENTA + debug_string + RESET"\n";
     
-    fprintf (stderr, "%s",ds.c_str());
+    fprintf (stderr, " %s",ds.c_str());
 } 
 
 
