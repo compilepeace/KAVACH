@@ -282,7 +282,7 @@ bool pack                   (int kfd, std::string &pack_target, std::string &pas
 bool unpack                 (int kfd, std::string &target_location, std::string &password_key);
 
 /* parse_cmdline_args.o */
-void parse_cmdline_args     (int argc, char **argv, std::string &password_key, std::string &pack_target, std::string &destination_dir, std::string &out_filename);
+void parse_cmdline_args     (int argc, char **argv, std::string &password_key, std::string &pack_target, std::string &out_filename);
 void print_usage            ();
 
 /* encrypt.o */

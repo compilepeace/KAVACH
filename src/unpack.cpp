@@ -52,7 +52,7 @@ bool unpack (int sfxfd, std::string &target_location, std::string &key) {
     }
 
     /* create a directory by the name of packed binary (target_location) */
-    out_archive = target_location.substr(0, target_location.find("."));
+    out_archive = target_location.substr(0, target_location.find_last_of("."));
     out_archive += "_dir";
     if (mkdir (out_archive.c_str(), S_IRWXU | S_IRWXG | S_IRWXO) == -1) {
         es = "while creating " + out_archive + " directory";

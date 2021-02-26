@@ -17,12 +17,12 @@
 
 
 /* Parse cmd line flags to get information that deceides further program flow */
-void parse_cmdline_args (int argc, char **argv, std::string &password_key, std::string &pack_target, std::string &target_location, std::string &out_filename) {
+void parse_cmdline_args (int argc, char **argv, std::string &password_key, std::string &pack_target, std::string &out_filename) {
     
     std::string encryption_type;
     static struct option long_options[] = {
         {"pack",            required_argument,  NULL,   'p'},
-        {"unpack",          required_argument,  NULL,   'u'},
+        {"unpack",          no_argument,        NULL,   'u'},
         {"key",             required_argument,  NULL,   'k'},
         {"output",          required_argument,  NULL,   'o'},
         {"encrypt",         required_argument,  NULL,   'e'},
@@ -58,9 +58,7 @@ void parse_cmdline_args (int argc, char **argv, std::string &password_key, std::
                         break;
 
             case 'u':   /* --unpack */
-                        target_location = optarg;
-                        if (!target_location.empty())
-                            UNPACK_FLAG = 1;
+                        UNPACK_FLAG = 1;
                         break;
 
             case 'o':   /* --output */
@@ -97,11 +95,11 @@ void print_usage () {
 
     std::cout << "\n" BOLDRED
               << "[-]" BOLDCYAN
-              << " Usage: " BOLDGREEN "kavach " BOLDWHITE "[-p <target> | -u <target>] -k <key> [-dh]\n\t" RESET
+              << " Usage: " BOLDGREEN "kavach " BOLDWHITE "[-p <target> | -u] -k <key> [-dh]\n\t" RESET
+	          << BOLDBLUE "-u" RESET " | " BOLDBLUE "--unpack                           " RESET ":" DIM YELLOW " unpack the data content from invoked SFX\n\t" RESET
               << BOLDBLUE "-p" RESET " | " BOLDBLUE "--pack    <target_location>        " RESET ":" DIM YELLOW " pack target @ (dir|file) location\n\t" RESET
               << BOLDBLUE "-d" RESET " | " BOLDBLUE "--destroy-relics                   " RESET ":" DIM YELLOW " delete all files after packing into kavach generated SFX binary\n\t" RESET
               << BOLDBLUE "-o" RESET " | " BOLDBLUE "--output                           " RESET ":" DIM YELLOW " output filename for kavach generated SFX binary\n\t" RESET
-              << BOLDBLUE "-u" RESET " | " BOLDBLUE "--unpack  <target_location>        " RESET ":" DIM YELLOW " unpack the data content to target_location\n\t" RESET
               << BOLDBLUE "-e" RESET " | " BOLDBLUE "--encrypt <encrytion_type>         " RESET ":" DIM YELLOW " encrypt the payload before archiving\n\t" RESET
               << BOLDBLUE "-k" RESET " | " BOLDBLUE "--key     <password_key>           " RESET ":" DIM YELLOW " password key to pack|unpack\n\t" RESET
               << BOLDBLUE "-h" RESET " | " BOLDBLUE "--help                             " RESET ":" DIM YELLOW " display help\n\t" RESET

@@ -10,15 +10,15 @@
 #include "kavach.h"
 
 uint8_t 		shdr_entry	__attribute__ ((section (SHDR_NAME)));
-int 			DESTROY_RELICS 			= 0;
-int 			UNPACK_FLAG 			= 0;
-int				PACK_FLAG				= 0;
-int 			KEY_FLAG				= 0;
-int 			OFNAME_FLAG 			= 0;
-Fhdr::encrypt	ENCRYPTION_TYPE 		= Fhdr::encrypt::FET_UND;
-uint64_t		KAVACH_BINARY_SIZE		= 0;
-uint64_t		ARCHIVE_SIZE 			= 0;
-uint64_t		PAGE_SIZE				= 0;
+int 			DESTROY_RELICS          = 0;
+int 			UNPACK_FLAG             = 0;
+int				PACK_FLAG               = 0;
+int 			KEY_FLAG                = 0;
+int 			OFNAME_FLAG             = 0;
+Fhdr::encrypt	ENCRYPTION_TYPE         = Fhdr::encrypt::FET_UND;
+uint64_t		KAVACH_BINARY_SIZE      = 0;
+uint64_t		ARCHIVE_SIZE            = 0;
+uint64_t		PAGE_SIZE               = 0;
 std::string 	es, ds;							
 
 
@@ -34,14 +34,14 @@ int main (int argc, char **argv) {
 
 	std::string 	password_key;
 	std::string 	pack_target;
-	std::string 	unpack_target;
+	std::string 	kgs_name;
 	std::string 	out_filename;
 	int 			kfd = -1;
 	std::stack<int> dirfds;
 
 
 	display_banner ();
-	parse_cmdline_args (argc, argv, password_key, pack_target, unpack_target, out_filename);
+	parse_cmdline_args (argc, argv, password_key, pack_target, out_filename);
 
 	/* validate cmd line args */
 	if (validate_args (password_key) == false) {
@@ -103,11 +103,12 @@ int main (int argc, char **argv) {
 
 			if (UNPACK_FLAG) {
 				/* [unpack.cpp]: extract target */
-				if ( unpack (kfd, unpack_target, password_key) == false ) {
+				kgs_name = argv[0];
+				if ( unpack (kfd, kgs_name, password_key) == false ) {
 					log ( __FILE__, __FUNCTION__, __LINE__, " couldn't unpack the given target" );
 					exit (0xb);
 				}
-				ds = "Unpacked files @ " + unpack_target;
+				ds = "Unpacked files @ " + kgs_name;
 				debug_msg (ds);
 			}
 		}
@@ -125,18 +126,18 @@ int main (int argc, char **argv) {
 
 
 /**************************************************************************** 
- * computes the size of ELF binary by using the below method rather than	*
- * using fstat () to get file attributes -				 					*
- * 																			*
- * 		filesize = sht_offset + (num_entries_in_sht * size_of_each_entry)	*
- * 																			*
- * NOTE: The reason I don't use fstat () is because it will include the		*
- * 		 size of our overall binary (including the archived payload) which	*
- * 		 would impact the portability for packing. 							*
- * 																			*
- * In short, this method ensures that -										*
- * 		"Even an archived SFX can archive new files!"						*
- * 																			*
+ * computes the size of ELF binary by using the below method rather than    *
+ * using fstat () to get file attributes -                                  *
+ *                                                                          *
+ * 		filesize = sht_offset + (num_entries_in_sht * size_of_each_entry)   *
+ *                                                                          *
+ * NOTE: The reason I don't use fstat () is because it will include the     *
+ * 		 size of our overall binary (including the archived payload) which  *
+ * 		 would impact the portability for packing.                          *
+ *                                                                          *
+ * In short, this method ensures that -                                     *
+ * 		"Even an archived SFX can archive new files!"                       *
+ *                                                                          *
  ****************************************************************************/
 bool get_kavach_binary_size (int kfd, uint64_t &KAVACH_BINARY_SIZE) {
 	

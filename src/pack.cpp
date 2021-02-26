@@ -207,7 +207,7 @@ static bool load_fpn (std::string &target_path, std::vector<Fhdr> &fht, std::vec
 
         /* get target file attributes and load it into cur_fhdr */
         if (stat (target_path.c_str(), &tsb) == -1) {
-            log (__FILE__, __FUNCTION__, __LINE__, "while fstat'ing <target>");
+            log (__FILE__, __FUNCTION__, __LINE__, "while stat'ing <target>");
             return false;
         }
         
