@@ -48,7 +48,7 @@ compilepeace@d3ad:~/KAVACH$ ./bin/kavach --pack "./testme" --output karna --encr
 
 ![metadata](./images/metadata.png)
 
-We see a binary named `karna.kgs` the generated SFX. We can verify it is packed by reading raw bytes from ELF header (via xxd). All .kgs binaries have a special section named `.kavach` which accounts for KBF (Kavach Binary Format).
+We see a binary named `karna.kgs`, i.e. the generated SFX. A kavach **packed** SFX (\*.kgs) can be identified by the signature - **KUNDAL** that is present inside the padding of ELF header (starting @ offset 0xa). All .kgs binaries have a special section named `.kavach` which accounts for the entire KBF (Kavach Binary Format).
 
 
 ### Unpack
