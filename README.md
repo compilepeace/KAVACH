@@ -1,9 +1,9 @@
 # KAVACH
 ![help](./images/help.png)
 
-Kavach is a free and open source **data protection software**, technically a **self-distributing SFX/SEA** software for Linux whose development was inspired by [Karna]'s armour. The idea of this software is to eliminate the need for installation of additional system software rather carrying the code to unpack archive meaning -
+Kavach is a free and open source **data protection software**, technically a **self-distributing SFX/SEA** software for Linux whose development was inspired by [Karna]'s armour. The idea for building this software is to eliminate the need for installation of any additional system software. It generates an ELF binary as output archive which can pack more data or unpack existing data (if it posseses any). In short -
 
-"If you have a kavach generated archive, you definitely have its unpacker." 
+"If you have a kavach generated archive, you definitely have the software to unpack your content." 
 
 **SFX** (**SelF eXtractor**) or a **SEA** (**Self Extracting Archive**) allows the user to archive the supplied files with executable code such that *no software installation* is required to unpack the files rather execution of SFX archive is enough to unpack the files. Self-distributing software means a single **K**avach **G**enerated **S**FX (**.kgs**) archive can be used to create other archives due to its *code body* having a ***self-replicating nature***. 
 
