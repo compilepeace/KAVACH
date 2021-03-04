@@ -1,23 +1,19 @@
 # KAVACH
 ![help](./images/help.png)
 
-Kavach is a free and open source **data protection software**, technically a **self-distributing SFX/SEA** software for Linux whose development was inspired by [Karna]'s armour. The idea for building this software is to eliminate the need for installation of any additional system software. It generates an ELF binary as output archive which can pack more data or unpack existing data (if it posseses any). In short -
+Kavach is a free and open source **data protection software**, technically a **self-distributing SFX/SEA** software for Linux whose development was inspired by [Karna]'s armour (from the epic Mahabharat). It is a **SFX** (**SelF eXtractor** or **Self Extracting Archive**) that allows a user to encrypt/archive supplied data with executable code such that ***no system software installation*** is required to unpack the files rather execution of SFX archive alone is enough to pack/unpack user data. The ELF binary packed/archived by kavach code body has an extension of **.kgs** (short for **K**avach **G**enerated **S**FX) along with a **KUNDAL** (indicating a packed binary) in its ELF header (at an offset of 0x8 bytes). Self-distributing here means a single *.kgs archive can be used to create other archives due to its *code body* having a ***self-replicating nature***. In short -
 
-"If you have a kavach generated archive, you definitely have the software to unpack your content." 
+**"If you have a kavach generated archive, you definitely have the software to unpack your content."**
 
-**SFX** (**SelF eXtractor**) or a **SEA** (**Self Extracting Archive**) allows the user to archive the supplied files with executable code such that *no software installation* is required to unpack the files rather execution of SFX archive is enough to unpack the files. Self-distributing software means a single **K**avach **G**enerated **S**FX (**.kgs**) archive can be used to create other archives due to its *code body* having a ***self-replicating nature***. 
-
- 
  **NOTE**: Kavach uses a custom binary format termed as KBF (short for **K**avach **B**inary **F**ormat) to zip files either in **plain text (raw unchanged bytes)** or an **encrypted (scrambled senseless bytes)** form.
 
 
 ## KUNDAL (*.kgs)
-It has a *custom binary format* responsible for posessing payload and metadata which considering modularity is made **independently parsable**, i.e. making kavach code and payload mutually exclusively independent of each other. It tries to **retain** most of the file's metadata while *packing/unpacking* data. Along with the directory structure, it preserves-
+It has a *custom binary format* responsible for posessing payload and metadata which is made **independently parsable** (made position-independent using relative offsets), i.e. making kavach code and payload mutually-exclusively independent of each other. It tries to **retain** most of the file's metadata while *packing/unpacking* data. Along with the directory structure, it preserves-
 * File/Directory **permission bits**.
 * Last **access** and last **modification** timestamp.
-* KBF is scalable to extend to additional attributes too (like **ownership** information) with slight modification.
+* KBF is scalable to extend to additional attributes (like **ownership** information) with slight modification.
 
-The ELF binary packed/archived by kavach code body has an extension of **.kgs** (short for **K**avach **G**enerated **S**FX) along with a **KUNDAL** (indicating a packed binary) in its ELF header (at an offset of 0x8 bytes). 
 
 
 ## CHECK IT OUT !
