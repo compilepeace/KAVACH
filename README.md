@@ -62,7 +62,7 @@ By default, the payload is unpacked in a directory named \<packed_filename\>_dir
 *Kavach* indeed refers to the code body either of the **originally compiled kavach software** or any generated **\*.kgs** binary both of which will act as original kavach software.
 
 ## CONTRIBUTIONS
-Kavach strongly needs contribution in the encryption module before it can become usable. Currently, XOR-encryption is naively applied to the payload body if the input files constitute any 0 bytes; compromising the integrity provided to the end user. Feel free to reach me out if you would like to contribute to this project.
+Kavach seeks contribution in the encryption module before it can become usable. Currently, XOR-encryption is naively applied to the payload body and if the input content being provided to kavach constitute a sufficiently long sequence of 0 bytes; the integrity provided to the end user may be compromised. Feel free to reach me out if you would like to contribute to this project.
 
 Cheers,
 <br>
